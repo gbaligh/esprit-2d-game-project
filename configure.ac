@@ -1,5 +1,9 @@
 AC_PREREQ([2.69])
 AC_INIT([ESPRIT-2D-GAME], [1.0], [https://github.com/gbaligh/esprit-2d-game-project/issues])
+
+AM_INIT_AUTOMAKE([1.11 foreign no-dist-gzip dist-xz subdir-objects])
+AM_SILENT_RULES([yes])
+
 AC_CONFIG_SRCDIR([src/menu.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile src/Makefile])
