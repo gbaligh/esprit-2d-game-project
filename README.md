@@ -19,5 +19,12 @@ a la  chaque stage , il va trouver une fleur et à la fin du stage ,il collecter
 Il y a aussi des points de vies,argent a ramasser ..
 apres le menu,il y aura une map (vue de haut) qui montre le progres de l'aventurier dans chaque stage..
 
+# How To run
+
+./autogen.sh
+./configure
+make
+./src/game
+
 # WEB Site
 www.esprit.tn

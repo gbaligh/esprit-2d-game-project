@@ -37,6 +37,10 @@ int main(int argc, char *argv[])
     return 128;
   }
 
+  if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, MIX_DEFAULT_CHANNELS, 1024) != 0) {
+    fprintf(stderr, "Error OpenAudio: %s\n", Mix_GetError());
+  }
+
   SDL_WM_SetCaption(WINDOW_TITLE, NULL);
   //SDL_WM_SetIcon(SDL_LoadBMP(icon),NULL);
 

@@ -10,16 +10,23 @@
 #define SCREEN_HEIGHT 280
 #define SCREEN_BPP 32
 
-#define TTF_FONT_FILENAME "img/Roboto-Italic.ttf"
+#define TTF_FONT_FILENAME "ttf/Roboto-Italic.ttf"
 #define TTF_FONT_SIZE 58
 
 #define IMG_BACKGROUND_FILENAME "img/background.png"
 #define IMG_BUTTON_FILENAME "img/button.png"
 
+#define MIX_EF_FILENAME "mix/switch.wav"
+#define MIX_BACK_FILENAME "mix/back.mp3"
+
 struct button_s {
+  /* Label of the button */
   const char *label;
+  /* Original surface */
   SDL_Surface *s;
+  /* Positon of the surface in the screen */
   SDL_Rect p;
+  /* Action of the button */
   int (*button_action)(void);
 };
 
@@ -28,20 +35,24 @@ struct page_s {
 };
 
 struct menu_s {
+  /* Background image surface */
   SDL_Surface *bg;
+  /* Button image surface */
   SDL_Surface *button;
+  /* Font for TTF */
   TTF_Font *font;
+  /* background music */
+  Mix_Music *music;
+  int isMusicPlaying;
+  /* Effect sound */
+  Mix_Chunk *effect;
+  /* Selected button */
   int idxButton;
 };
 
 extern int gameRunning;
 
-static struct menu_s gMenu = {
-  NULL,
-  NULL,
-  NULL,
-  0,
-};
+static struct menu_s gMenu;
 
 static int play_action(void)
 {
@@ -93,6 +104,16 @@ int Menu_Init()
     return 1;
   }
 
+  gMenu.music = Mix_LoadMUS(MIX_BACK_FILENAME);
+  if (gMenu.music == NULL) {
+    log_error("loading background music: %s\n", Mix_GetError());
+  }
+
+  gMenu.effect = Mix_LoadWAV(MIX_EF_FILENAME); 
+  if (gMenu.effect == NULL) {
+    log_error("Mix_LoadWAV: %s\n", Mix_GetError());
+  }
+
   return 0;
 }
 
@@ -121,12 +142,13 @@ int Menu_Action(SDL_Event *pEvent)
   /* keyboard handling */
   if ((pEvent->type == SDL_KEYDOWN) && (lastEventType != SDL_KEYDOWN)) {
     if (pEvent->key.keysym.sym == SDLK_DOWN) {
-      gMenu.idxButton = ++gMenu.idxButton % buttonNbr;
+      gMenu.idxButton = (gMenu.idxButton + 1) % buttonNbr;
     }
     if (pEvent->key.keysym.sym == SDLK_UP) {
       if (--gMenu.idxButton < 0) gMenu.idxButton += buttonNbr;
     }
     lastEventType = SDL_KEYDOWN;
+    Mix_PlayChannel(-1, gMenu.effect, 0);
   }
   if ((pEvent->type == SDL_KEYUP) && (lastEventType != SDL_KEYUP)) {
     lastEventType = SDL_KEYUP;
@@ -141,8 +163,13 @@ int Menu_Action(SDL_Event *pEvent)
   /* Mouse handling */
   if ((pEvent->type == SDL_MOUSEMOTION) || (pEvent->type == SDL_MOUSEBUTTONUP)) {
     for (_i = 0; _i < buttonNbr; ++_i) {
-      if ((pEvent->motion.x > gButtons[_i].p.x ) && (pEvent->motion.x < gButtons[_i].p.x + gButtons[_i].p.w ) && (pEvent->motion.y > gButtons[_i].p.y ) && (pEvent->motion.y < gButtons[_i].p.y + gButtons[_i].p.h )) {
+      if ((pEvent->motion.x > gButtons[_i].p.x ) && 
+          (pEvent->motion.x < gButtons[_i].p.x + gButtons[_i].p.w ) && 
+          (pEvent->motion.y > gButtons[_i].p.y ) && 
+          (pEvent->motion.y < gButtons[_i].p.y + gButtons[_i].p.h )) {
+        /* Selected button */
         gMenu.idxButton = _i;
+        Mix_PlayChannel(-1, gMenu.effect, 0);
 
         if (pEvent->motion.state == SDL_PRESSED) {
           if (gButtons[gMenu.idxButton].button_action) {
@@ -168,6 +195,10 @@ int Menu_Blit(SDL_Surface *pDst)
     return 1;
   }
 
+  if (!gMenu.isMusicPlaying) { 
+    gMenu.isMusicPlaying = !Mix_PlayMusic(gMenu.music, -1);
+  }
+
   return 0;
 }
 
@@ -185,7 +216,7 @@ int Menu_AddButtons(SDL_Surface *pDst)
     return 1;
   }
   
-  for(_i=0; _i<buttonNbr; ++_i) {
+  for (_i=0; _i<buttonNbr; ++_i) {
     /* Free old surface */
     if (gButtons[_i].s != NULL) {
       SDL_FreeSurface(gButtons[_i].s);
@@ -211,11 +242,11 @@ int Menu_AddButtons(SDL_Surface *pDst)
   }
 
   /* offset of all buttons (center) */
-  offset.x = (pDst->w / 2) - (gButtons[0].s->w / 2);
-  int _y = (pDst->h / 2) - ((gButtons[0].s->h + gButtons[0].s->h/4) * (buttonNbr-1) / 2);
+  int _x = (pDst->w / 2) - (gMenu.button->w / 2);
+  int _y = (pDst->h / 2) - ((gMenu.button->h + gMenu.button->h/4) * (buttonNbr-1) / 2);
 
   for (_i=0; _i<buttonNbr; ++_i) {
-    gButtons[_i].p.x = offset.x;
+    gButtons[_i].p.x = _x;
     gButtons[_i].p.y = _y + (gButtons[_i].s->h + gButtons[_i].s->h/4) * _i;
     SDL_BlitSurface(gButtons[_i].s, NULL, pDst, &gButtons[_i].p);
   }
