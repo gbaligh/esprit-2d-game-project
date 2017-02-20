@@ -1,3 +1,4 @@
+
 # Esprit Tunisia 2D game project (2017)
 Le projet demande est un jeu 2d sur système ubuntu avec la bibliothèque SDL (image,vidéo,ttf,mix,..)
 Il est composé de
@@ -21,10 +22,14 @@ apres le menu,il y aura une map (vue de haut) qui montre le progres de l'aventur
 
 # How To run
 
+```
+git clone https://github.com/gbaligh/esprit-2d-game-project.git
+cd esprit-2d-game-project
 ./autogen.sh
 ./configure
 make
 ./src/game
+```
 
 # WEB Site
 www.esprit.tn
