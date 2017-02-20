@@ -50,7 +50,7 @@ AC_CHECK_LIB(SDL_ttf,
 	     TTF_Init, , 
 	     AC_MSG_ERROR([
 			*** Unable to find SDL_ttf libary
-			(http://www.libsdl.org/projects/SDL_image/)
+			(http://www.libsdl.org/projects/SDL_ttf/)
 			])
 	     )
 
@@ -59,7 +59,16 @@ AC_CHECK_LIB(SDL_mixer,
 	     Mix_OpenAudio, , 
 	     AC_MSG_ERROR([
 			*** Unable to find SDL_mixer libary
-			(http://www.libsdl.org/projects/SDL_image/)
+			(http://www.libsdl.org/projects/SDL_mix/)
+			])
+	     )
+
+# Check for SDL_gfx library
+AC_CHECK_LIB(SDL_gfx, 
+	     rotozoomSurfaceXY, , 
+	     AC_MSG_ERROR([
+			*** Unable to find SDL_gfx libary
+			(http://www.libsdl.org/projects/SDL_gfx/)
 			])
 	     )
 

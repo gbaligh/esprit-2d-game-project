@@ -4,6 +4,7 @@
 #include <SDL/SDL_image.h>
 #include <SDL/SDL_mixer.h>
 #include <SDL/SDL_ttf.h>
+#include <SDL/SDL_rotozoom.h>
 #include "debug.h"
 
 #define SCREEN_WIDTH  357
@@ -37,6 +38,7 @@ struct page_s {
 struct menu_s {
   /* Background image surface */
   SDL_Surface *bg;
+  SDL_Surface *bgStretched;
   /* Button image surface */
   SDL_Surface *button;
   /* Font for TTF */
@@ -87,7 +89,7 @@ int Menu_Init()
     log_error("Loading background: %s", IMG_GetError());
     return 1;
   }
-
+ 
   gMenu.button = IMG_Load(IMG_BUTTON_FILENAME);
   if (gMenu.button == NULL) {
     log_error("Loading button: %s", IMG_GetError());
@@ -188,7 +190,22 @@ int Menu_Action(SDL_Event *pEvent)
 
 int Menu_Blit(SDL_Surface *pDst)
 {
-  if (SDL_BlitSurface(gMenu.bg, NULL, pDst, NULL) != 0) {
+  SDL_Rect offset;
+
+  offset.x = 0;
+  offset.y = 0;
+  offset.w = pDst->w;
+  offset.h = pDst->h;
+
+  if (gMenu.bgStretched == NULL) {
+    gMenu.bgStretched = rotozoomSurfaceXY(gMenu.bg, 0.0, (double)pDst->w / (double)gMenu.bg->w, (double)pDst->h / (double)gMenu.bg->h, 1);
+    if (gMenu.bgStretched == NULL) {
+      log_error("Error stretching image: %s", SDL_GetError());
+      return 1;
+    }
+  }
+
+  if (SDL_BlitSurface(gMenu.bgStretched, NULL, pDst, &offset) != 0) {
     log_error("Bliting background image: %s", SDL_GetError());
     return 1;
   }
