@@ -143,12 +143,13 @@ int Menu_Action(SDL_Event *pEvent)
   if ((pEvent->type == SDL_KEYDOWN) && (lastEventType != SDL_KEYDOWN)) {
     if (pEvent->key.keysym.sym == SDLK_DOWN) {
       gMenu.idxButton = (gMenu.idxButton + 1) % buttonNbr;
+      Mix_PlayChannel(-1, gMenu.effect, 0);
     }
     if (pEvent->key.keysym.sym == SDLK_UP) {
       if (--gMenu.idxButton < 0) gMenu.idxButton += buttonNbr;
+      Mix_PlayChannel(-1, gMenu.effect, 0);
     }
     lastEventType = SDL_KEYDOWN;
-    Mix_PlayChannel(-1, gMenu.effect, 0);
   }
   if ((pEvent->type == SDL_KEYUP) && (lastEventType != SDL_KEYUP)) {
     lastEventType = SDL_KEYUP;
@@ -168,8 +169,10 @@ int Menu_Action(SDL_Event *pEvent)
           (pEvent->motion.y > gButtons[_i].p.y ) && 
           (pEvent->motion.y < gButtons[_i].p.y + gButtons[_i].p.h )) {
         /* Selected button */
-        gMenu.idxButton = _i;
-        Mix_PlayChannel(-1, gMenu.effect, 0);
+        if (gMenu.idxButton != _i) {
+          Mix_PlayChannel(-1, gMenu.effect, 0);
+          gMenu.idxButton = _i;
+        }
 
         if (pEvent->motion.state == SDL_PRESSED) {
           if (gButtons[gMenu.idxButton].button_action) {
