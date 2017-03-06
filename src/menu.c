@@ -6,6 +6,7 @@
 #include <SDL/SDL_ttf.h>
 #include <SDL/SDL_rotozoom.h>
 #include "debug.h"
+#include "main.h"
 
 #define SCREEN_WIDTH  357
 #define SCREEN_HEIGHT 280
@@ -52,8 +53,6 @@ struct menu_s {
   int idxButton;
 };
 
-extern int gameRunning;
-
 static struct menu_s gMenu;
 
 static int play_action(void)
@@ -71,7 +70,7 @@ static int options_action(void)
 static int quit_action(void)
 {
   log_info("QUIT GAME: BYE BYE");
-  gameRunning = 0;
+  main_loop_stop();
   return 0;
 }
 
@@ -82,7 +81,7 @@ static struct button_s gButtons[] = {
   {"quit", NULL, {0}, quit_action},
 };
 
-int Menu_Init()
+int menu_init()
 {
   gMenu.bg = IMG_Load(IMG_BACKGROUND_FILENAME);
   if (gMenu.bg == NULL) {
@@ -119,13 +118,16 @@ int Menu_Init()
   return 0;
 }
 
-int Menu_Deinit()
+int menu_deinit()
 {
   int _i = 0;
   int buttonNbr = sizeof(gButtons)/sizeof(gButtons[0]);
 
   SDL_FreeSurface(gMenu.bg);
   SDL_FreeSurface(gMenu.button);
+  
+  Mix_FreeMusic(gMenu.music);
+  
   TTF_CloseFont(gMenu.font);
   
   for (_i=0; _i<buttonNbr; ++_i) {
@@ -135,7 +137,7 @@ int Menu_Deinit()
   return 0;
 }
 
-int Menu_Action(SDL_Event *pEvent)
+int menu_action(SDL_Event *pEvent)
 {
   static int lastEventType = -1;
   int _i = 0;
@@ -153,6 +155,7 @@ int Menu_Action(SDL_Event *pEvent)
     }
     lastEventType = SDL_KEYDOWN;
   }
+  
   if ((pEvent->type == SDL_KEYUP) && (lastEventType != SDL_KEYUP)) {
     lastEventType = SDL_KEYUP;
     /* Enter key: Action on button */
@@ -188,12 +191,10 @@ int Menu_Action(SDL_Event *pEvent)
   return 0;
 }
 
-int Menu_Blit(SDL_Surface *pDst)
+int menu_blit(SDL_Surface *pDst)
 {
-  SDL_Rect offset;
+  SDL_Rect offset = {0};
 
-  offset.x = 0;
-  offset.y = 0;
   offset.w = pDst->w;
   offset.h = pDst->h;
 
@@ -210,7 +211,7 @@ int Menu_Blit(SDL_Surface *pDst)
     return 1;
   }
 
-  if (Menu_AddButtons(pDst) != 0) {
+  if (menu_addButtons(pDst) != 0) {
     log_error("Adding buttons to menu");
     return 1;
   }
@@ -222,14 +223,14 @@ int Menu_Blit(SDL_Surface *pDst)
   return 0;
 }
 
-int Menu_AddButtons(SDL_Surface *pDst)
+int menu_addButtons(SDL_Surface *pDst)
 {
   SDL_Surface *_pText = NULL;
   SDL_Color blackColor = {0};
   SDL_Color selectedColor = {255, 255, 128, 0};
   int _i = 0;
   int buttonNbr = sizeof(gButtons)/sizeof(gButtons[0]);
-  SDL_Rect offset;
+  SDL_Rect offset = {0};
 
   if (gMenu.button == NULL) {
     log_error("Menu not initialized");

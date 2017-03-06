@@ -5,86 +5,121 @@
 #include <SDL/SDL_mixer.h>
 #include <SDL/SDL_ttf.h>
 #include "debug.h"
+#include "window.h"
+#include "menu.h"
 
 const int WINDOW_WIDTH = 640;
 const int WINDOW_HEIGHT = 480;
-const char* WINDOW_TITLE = "SDL game";
+const char* WINDOW_TITLE = "SDLv1.2 game for education";
 int gameRunning = 1;
 
-struct button_s {
-  const char *name;
-  SDL_Surface *imageSurface;
-  SDL_Surface *textSurface;
-};
+static SDL_Event event;
 
-int main(int argc, char *argv[])
+static void main_process_event(void)
 {
-  SDL_Surface *_pScreen = NULL;
-  SDL_Event event;
-  const SDL_VideoInfo* _pScreenInfo = NULL;
-  int screenWidth = WINDOW_WIDTH;
-  int screenHeight = WINDOW_HEIGHT;
+  while (SDL_PollEvent(&event)) {
+    switch (event.type) {
+      case SDL_QUIT:
+        gameRunning = 0;
+        break;
+
+      default:
+        break;
+    }
+  }
+}
+
+static void main_loop(void)
+{
+  log_info("Starting loop ...");
+  while (gameRunning) {
+    main_process_event();
+    menu_action(&event);
+    menu_blit(get_screen());
+    flip_screen();
+  }
+}
+
+static int main_init(void)
+{
+  SDL_version compiled;
 
   /* Init SDL */
-  if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
+  if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
     log_error("Could not initialize SDL");
-    return 128;
+    return 1;
+  }
+  
+  SDL_VERSION(&compiled);
+  log_info("Compiled against SDL %d.%d.%d", compiled.major, compiled.minor, compiled.patch);
+  
+  srand(SDL_GetTicks());
+
+  /* Init IMG for PNG loading */
+  if ((IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG) != IMG_INIT_PNG) {
+    log_error("Failed to init SDL_image - PNG", IMG_GetError());
+    goto ERROR_L1;
   }
 
-  if (TTF_Init() != 0) {
+  /* Init TTF */
+  if (TTF_Init() < 0) {
     log_error("Error initializing TTF: %s", TTF_GetError());
-    SDL_Quit();
-    return 128;
+    goto ERROR_L2;
   }
 
   if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, MIX_DEFAULT_CHANNELS, 1024) != 0) {
-    fprintf(stderr, "Error OpenAudio: %s\n", Mix_GetError());
+    log_error("Error OpenAudio: %s", Mix_GetError());
   }
-
-  SDL_WM_SetCaption(WINDOW_TITLE, NULL);
-  //SDL_WM_SetIcon(SDL_LoadBMP(icon),NULL);
-
-  _pScreenInfo = SDL_GetVideoInfo();
-  screenWidth = _pScreenInfo->current_w;
-  screenHeight = _pScreenInfo->current_h;
   
-  _pScreen = SDL_SetVideoMode(screenWidth, screenHeight, 0, SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_FULLSCREEN);
-  if (_pScreen == NULL) {
-    log_error("Error creating window");
-    TTF_Quit();
-    SDL_Quit();
-    return 128;
-  }
-
-  log_info("FullScreen: Yes, Screen Width: %d, Screen Height: %d", screenWidth, screenHeight);
-
-  if (Menu_Init() != 0) {
+  if (menu_init() != 0) {
     log_error("Menu initialization");
-    TTF_Quit();
-    SDL_Quit();
+    goto ERROR_L3;
+  }
+
+  return 0;
+
+ERROR_L3:
+  TTF_Quit();
+ERROR_L2:
+  IMG_Quit();
+ERROR_L1:
+  SDL_Quit();
+  return 1;
+}
+
+static void main_deinit()
+{
+  log_info("Destroy all reserved memory");
+  menu_deinit();
+  Mix_CloseAudio();
+  TTF_Quit();
+  IMG_Quit();
+  SDL_Quit();
+}
+
+int main_isRunning(void)
+{
+  return gameRunning;
+}
+
+void main_loop_stop(void)
+{
+  gameRunning = 0;
+}
+
+int main(int argc, char *argv[])
+{
+  if (main_init() != 0) {
+    log_error("Initialisation failed");
     return 128;
   }
 
-  while (gameRunning) {
-    if (SDL_PollEvent(&event)) {
-      if (event.type == SDL_QUIT) {
-        gameRunning = 0;
-      }
-    }
+  init_window(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT, true);
 
-    Menu_Action(&event);
-
-    Menu_Blit(_pScreen);
-
-    SDL_Flip(_pScreen);
-  }
-
-  Menu_Deinit();
-
-  SDL_FreeSurface(_pScreen);
-
-  TTF_Quit();
-  SDL_Quit();
+  main_loop();
+  
+  dispose_window();
+  main_deinit();
   return 0;
 }
 
