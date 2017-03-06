@@ -6,6 +6,7 @@
 #include <SDL/SDL_ttf.h>
 #include <SDL/SDL_rotozoom.h>
 #include "debug.h"
+#include "menu.h"
 #include "main.h"
 
 #define SCREEN_WIDTH  357
@@ -51,6 +52,8 @@ struct menu_s {
   Mix_Chunk *effect;
   /* Selected button */
   int idxButton;
+
+  struct main_obj_s obj;
 };
 
 static struct menu_s gMenu;
@@ -117,6 +120,12 @@ int menu_init()
     log_error("Mix_LoadWAV: %s\n", Mix_GetError());
   }
 
+  gMenu.obj.name = "menu";
+  gMenu.obj.obj_event_handler = menu_action;
+  gMenu.obj.obj_blit = menu_blit;
+
+  main_register_obj(&gMenu.obj);
+
   return 0;
 }
 
@@ -135,6 +144,8 @@ int menu_deinit()
   for (_i=0; _i<buttonNbr; ++_i) {
     SDL_FreeSurface(gButtons[_i].s);
   }
+
+  main_unregister_obj(&gMenu.obj);
 
   return 0;
 }
