@@ -55,6 +55,8 @@ struct menu_s {
 
 static struct menu_s gMenu;
 
+int menu_addButtons(SDL_Surface *pDst);
+
 static int play_action(void)
 {
   log_info("Play game");
